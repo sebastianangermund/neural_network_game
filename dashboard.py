@@ -6,8 +6,8 @@ from network import Network
 
 # Initial Values
 
-number_of_killers = 4
-number_of_particles = 3
+number_of_killers = 5
+number_of_particles = 5
 
 windowWidth = 400
 windowHeight = 400
