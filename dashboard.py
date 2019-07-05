@@ -6,22 +6,24 @@ from network import Network
 
 # Initial Values
 
-number_of_killers = 5
-number_of_particles = 5
+number_of_killers = 6
+number_of_particles = 4
 
-windowWidth = 400
-windowHeight = 400
+windowWidth = 450
+windowHeight = 450
 
 n_cells = 1 + number_of_particles + number_of_killers
 
 network = Network([2*n_cells, 100, n_cells-1])
+
+use_network = True
 
 # Automatic
 window_dim = windowWidth, windowHeight
 direction_list = [-1, 0, 1, 10]
 particle_list = []
 killer_list = []
-player = Player(window_dim, network)
+player = Player(window_dim, network, use_network)
 
 for i in range(0, number_of_particles):
     new_particle = Particle('particle_{}'.format(i), window_dim)
@@ -32,4 +34,3 @@ for i in range(0, number_of_killers):
 
 A = App(player, particle_list, killer_list, window_dim)
 A.on_execute()
-

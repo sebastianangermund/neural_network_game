@@ -1,6 +1,7 @@
 import random as rn
 import weakref
 import math
+from random import randrange
 
 from network import Network
 
@@ -14,6 +15,9 @@ class Particle:
         self.y = rn.randint(0, self.windowHeight)
         self.name = name
         self._instances.add(weakref.ref(self))
+        self.R = randrange(0,255)
+        self.G = randrange(0,255)
+        self.B = randrange(0,255)
 
     def moveRight(self):
         self.x = (self.x + rn.randint(-4, 4)) % self.windowWidth
@@ -102,7 +106,7 @@ class Killer:
 class Player:
     _instances = set()
 
-    def __init__(self, window_dim, network):
+    def __init__(self, window_dim, network, use_network):
         self.windowWidth, self.windowHeight = window_dim
         self.network = network
         self.level = 20
@@ -114,6 +118,7 @@ class Player:
         self.G = 255
         self.B = 0
         self.speed = 8
+        self.use_network = use_network
 
     def moveRight(self):
         self.x = (self.x + self.speed) % self.windowWidth
@@ -184,4 +189,3 @@ class Player:
             self.moveUp()
         elif move == 'dd':
             self.moveDown()
-

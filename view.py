@@ -65,24 +65,25 @@ class App():
             self.player.size,
             self.player.fill,
         )
-
-        state_array = np.zeros((self.n_cells-1, 1))
-        coord_array = np.zeros((2*self.n_cells, 1))
-        coord_array[0] = self.player.x
-        coord_array[1] = self.player.y
-        count = 1
+        if self.player.use_network:
+            state_array = np.zeros((self.n_cells-1, 1))
+            coord_array = np.zeros((2*self.n_cells, 1))
+            coord_array[0] = self.player.x
+            coord_array[1] = self.player.y
+            count = 1
         for obj in self.particles:
             distance = coll(self.player, obj, self.windowWidth, self.windowHeight)
             pygame.draw.circle(
-                self._display_surf, (255, 255, 255), (obj.x, obj.y), 4, 3)
-            coord_array[2*count] = obj.x
-            coord_array[2*count+1] = obj.y
-            if distance == 0:
-                state_array[count-1] = -1 
-            else:
-                if not state_array[np.argmin(state_array)] == -1:
-                    state_array[count-1] = 1 - distance/(self.windowWidth**2+self.windowHeight**2)**(1/2)
-            count += 1
+                self._display_surf, (obj.R, obj.G, obj.B), (obj.x, obj.y), 4, 3)
+            if self.player.use_network:
+                coord_array[2*count] = obj.x
+                coord_array[2*count+1] = obj.y
+                if distance == 0:
+                    state_array[count-1] = -1
+                else:
+                    if not state_array[np.argmin(state_array)] == -1:
+                        state_array[count-1] = 1 - distance/(self.windowWidth**2+self.windowHeight**2)**(1/2)
+                count += 1
 
         for obj in self.killers:
             distance = fight(self.player, obj, self.windowWidth, self.windowHeight)
@@ -93,35 +94,42 @@ class App():
                 obj.size,
                 obj.fill,
             )
-            coord_array[2*count] = obj.x
-            coord_array[2*count+1] = obj.y
-            if not state_array[np.argmin(state_array)] == -1:
-                if distance == -100:
-                    state_array[count-1] = -100
-                else:
-                    state_array[count-1] = distance/(self.windowWidth**2+self.windowHeight**2)**(1/2)
-            count += 1
+            if self.player.use_network:
+                coord_array[2*count] = obj.x
+                coord_array[2*count+1] = obj.y
+                if not state_array[np.argmin(state_array)] == -1:
+                    if distance == -100:
+                        state_array[count-1] = -100
+                    else:
+                        state_array[count-1] = -5*distance/(self.windowWidth**2+self.windowHeight**2)**(1/2)
+                count += 1
 
-        activations = self.player.network.SGD((np.float32(coord_array), state_array),
-                                              1,
-                                              1,
-                                              0.5)
-        choice_index = np.argmax(activations)
-        x_direction = (coord_array[2*(choice_index+1)] - self.player.x)
-        y_direction = (coord_array[2*(choice_index+1)+1] - self.player.y)
-        factor = max(abs(x_direction), abs(y_direction))
-        x_step = x_direction/factor
-        y_step = y_direction/factor
-        self.player.x = (self.player.x + 8*x_step) % self.windowWidth 
-        self.player.y = (self.player.y + 8*y_step) % self.windowHeight
+        if self.player.use_network:
+            # OBS
+            # If you give a random array as input, the player will only
+            # chase a single particle. If you give the coordinates however,
+            # it will sometimes switch to a different particle!
+            # *GIVE RANDOM ARRAY AS INPUT*
+            state_array = np.random.uniform(low=0, high=self.windowWidth, size=state_array.shape)
+            # *COMMENT OUT TO GIVE COORDINATES*
+            activations = self.player.network.SGD((np.float32(coord_array), state_array), 1, 1, 0.5)
+            choice_index = np.argmax(activations)
+            x_direction = (coord_array[2*(choice_index+1)] - self.player.x)
+            y_direction = (coord_array[2*(choice_index+1)+1] - self.player.y)
+            factor = max(abs(x_direction), abs(y_direction))
+            x_step = x_direction/factor
+            y_step = y_direction/factor
+            self.player.x = (self.player.x + 8*x_step) % self.windowWidth
+            self.player.y = (self.player.y + 8*y_step) % self.windowHeight
 
         if self.player.level == 0:
-            file = open('network_info_end', 'w')
-            file.write('BIASES: \n')
-            file.write('{} \n'.format(self.player.network.biases))
-            file.write('WEIGHTS: \n')
-            file.write('{} \n'.format(self.player.network.weights))
-            file.close()
+            if self.player.use_network:
+                file = open('network_info_end', 'w')
+                file.write('BIASES: \n')
+                file.write('{} \n'.format(self.player.network.biases))
+                file.write('WEIGHTS: \n')
+                file.write('{} \n'.format(self.player.network.weights))
+                file.close()
             self._running = False
 
         pygame.display.flip()

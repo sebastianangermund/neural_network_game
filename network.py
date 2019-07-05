@@ -145,7 +145,7 @@ class Network(object):
         if y[np.argmin(y)] == -1:
             return np.zeros(y.shape)
         elif y[np.argmin(y)] == -100:
-            return np.ones(y.shape)
+            return np.ones(y.shape)*3
 
         return (output_activations-y)
 
@@ -157,4 +157,3 @@ def sigmoid(z):
 def sigmoid_prime(z):
     """Derivative of the sigmoid function."""
     return sigmoid(z)*(1-sigmoid(z))
-
