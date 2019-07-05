@@ -1,10 +1,6 @@
 OBS Run with python3.6
 
-```python
- $ def baba(def):
-```
-
-NETWORK COMMENTS
+### Run game
 
 ```python
 $ python dashboard.py
