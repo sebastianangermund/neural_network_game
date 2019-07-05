@@ -22,7 +22,7 @@ def fight(player, obj, windowWidth, windowHeight):
     limit = max(player.size, obj.size)
     x, y = player.x, player.y
     dd = math.sqrt(((x - obj.x)**2) + ((y - obj.y)**2))
-    if dd < 12:
+    if dd < 9:
         # give player high risk high reward chance to level up
         player.level_down(obj.level)
         # obj.level_up()
@@ -32,7 +32,7 @@ def fight(player, obj, windowWidth, windowHeight):
 
 class App():
     '''Class that runs the game'''
-    def __init__(self, player, particles, killers, window_dim):
+    def __init__(self, player, particles, killers, window_dim, eta):
         self.windowWidth, self.windowHeight = window_dim
         self.player = player
         self.particles = particles
@@ -41,6 +41,7 @@ class App():
         self._display_surf = None
         self._image_surf = None
         self.n_cells = 1 + len(particles) + len (killers)
+        self.eta = eta
 
     def on_init(self):
         pygame.init()
@@ -110,9 +111,9 @@ class App():
             # chase a single particle. If you give the coordinates however,
             # it will sometimes switch to a different particle!
             # *GIVE RANDOM ARRAY AS INPUT*
-            state_array = np.random.uniform(low=0, high=self.windowWidth, size=state_array.shape)
+            # state_array = np.random.uniform(low=0, high=self.windowWidth, size=state_array.shape)
             # *COMMENT OUT TO GIVE COORDINATES*
-            activations = self.player.network.SGD((np.float32(coord_array), state_array), 1, 1, 0.5)
+            activations = self.player.network.SGD((np.float32(coord_array), state_array), 1, 1, 0.3)
             choice_index = np.argmax(activations)
             x_direction = (coord_array[2*(choice_index+1)] - self.player.x)
             y_direction = (coord_array[2*(choice_index+1)+1] - self.player.y)
