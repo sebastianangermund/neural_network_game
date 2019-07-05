@@ -7,8 +7,8 @@ $ python dashboard.py
 ```
 
 ### Tune parameters
-* You can tune parameters in the script dashboard.py.
-* If you want less hidden layers you can set a layser to 0.
+* You can tune parameters in the script dashboard.py
+* If you want less hidden layers you can set a layer to 0.
 * If you want to add more layers you have to modify the script accordingly.
 
 If you want to play yourself, set "use_network = False"
