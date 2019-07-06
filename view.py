@@ -102,7 +102,7 @@ class App():
                     if distance == -100:
                         state_array[count-1] = -100
                     else:
-                        state_array[count-1] = -5*distance/(self.windowWidth**2+self.windowHeight**2)**(1/2)
+                        state_array[count-1] = -2*distance/(self.windowWidth**2+self.windowHeight**2)**(1/2)
                 count += 1
 
         if self.player.use_network:

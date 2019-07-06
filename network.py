@@ -145,7 +145,7 @@ class Network(object):
         if y[np.argmin(y)] == -1:
             return np.zeros(y.shape)
         elif y[np.argmin(y)] == -100:
-            return np.ones(y.shape)*3
+            return np.ones(y.shape)*10
 
         return (output_activations-y)
 

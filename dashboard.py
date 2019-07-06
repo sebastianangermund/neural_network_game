@@ -11,10 +11,10 @@ Run the game with this script by running:
 '''
 
 # -------- Set parameters -------- #
-number_of_killers = 6
-number_of_particles = 5
-windowWidth = 450
-windowHeight = 450
+number_of_killers = 3
+number_of_particles = 3
+windowWidth = 400
+windowHeight = 400
 # training rate eta
 eta = 0.4
 # Choose if you want the network to play (True) or yourself (False)
@@ -22,7 +22,7 @@ use_network = True
 # Neural network properties
 first_layer = 20
 second_layer = 99
-third_layer = 30
+third_layer = 40
 
 
 # -------- Automatic parameters -------- #
