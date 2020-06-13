@@ -50,5 +50,9 @@ for i in range(0, number_of_killers):
 A = App(player, particle_list, killer_list, window_dim, eta)
 A.on_execute()
 
-with open("time_data.txt", "w") as file:
-    file.write('\n'.join(str(x) for x in player.time_data))
+with open('time_data.py', 'w') as file:
+    file.write('data = [')
+
+with open('time_data.py', 'a') as file:
+    file.write(',\n'.join(str(x) for x in player.time_data))
+    file.write('\n]')
