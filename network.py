@@ -34,13 +34,11 @@ class Network(object):
         self.weights = [np.random.randn(y, x)
                         for x, y in zip(sizes[:-1], sizes[1:])]
 
-
     def feedforward(self, a):
         """Return the output of the network if ``a`` is input."""
         for b, w in zip(self.biases, self.weights):
             a = sigmoid(np.dot(w, a)+b)
         return a
-
 
     def SGD(self, training_data, epochs, mini_batch_size, eta,
             test_data=None):
@@ -69,12 +67,12 @@ class Network(object):
             for training_data in mini_batches:
                 self.update_mini_batch(training_data, eta)
             if test_data:
-                print("Epoch {} : {} / {}".format(j,self.evaluate(test_data),n_test));
+                print("Epoch {} : {} / {}".format(j,self.evaluate(test_data),
+                      n_test));
             else:
                 print("Epoch {} complete".format(j))
             '''
         return self.update_mini_batch(training_data, eta)
-
 
     def update_mini_batch(self, mini_batch, eta):
         """Update the network's weights and biases by applying
@@ -104,8 +102,8 @@ class Network(object):
         nabla_w = [np.zeros(w.shape) for w in self.weights]
         # feedforward
         activation = x
-        activations = [x] # list to store all the activations, layer by layer
-        zs = [] # list to store all the z vectors, layer by layer
+        activations = [x]  # list to store all the activations, layer by layer
+        zs = []  # list to store all the z vectors, layer by layer
         for b, w in zip(self.biases, self.weights):
             z = np.dot(w, activation)+b
             zs.append(z)
@@ -122,12 +120,12 @@ class Network(object):
         # second-last layer, and so on.  It's a renumbering of the
         # scheme in the book, used here to take advantage of the fact
         # that Python can use negative indices in lists.
-        for l in range(2, self.num_layers):
-            z = zs[-l]
+        for layer in range(2, self.num_layers):
+            z = zs[-layer]
             sp = sigmoid_prime(z)
-            delta = np.dot(self.weights[-l+1].transpose(), delta) * sp
-            nabla_b[-l] = delta
-            nabla_w[-l] = np.dot(delta, activations[-l-1].transpose())
+            delta = np.dot(self.weights[-layer+1].transpose(), delta) * sp
+            nabla_b[-layer] = delta
+            nabla_w[-layer] = np.dot(delta, activations[-layer-1].transpose())
         return nabla_b, nabla_w, activations[-1]
 
     def evaluate(self, test_data):
@@ -140,8 +138,8 @@ class Network(object):
         return sum(int(x == y) for (x, y) in test_results)
 
     def cost_derivative(self, output_activations, y):
-        """Return the vector of partial derivatives \partial C_x /
-        \partial a for the output activations."""
+        """Return the vector of partial derivatives partial C_x /
+        partial a for the output activations."""
         if y[np.argmin(y)] == -1:
             return np.zeros(y.shape)
         elif y[np.argmin(y)] == -100:
@@ -149,10 +147,12 @@ class Network(object):
 
         return (output_activations-y)
 
-#### Miscellaneous functions
+
+# Miscellaneous functions
 def sigmoid(z):
     """The sigmoid function."""
     return 1.0/(1.0+np.exp(-z))
+
 
 def sigmoid_prime(z):
     """Derivative of the sigmoid function."""

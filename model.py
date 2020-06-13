@@ -1,6 +1,7 @@
 import random as rn
 import weakref
 import math
+import time
 from random import randrange
 
 from network import Network
@@ -15,9 +16,9 @@ class Particle:
         self.y = rn.randint(0, self.windowHeight)
         self.name = name
         self._instances.add(weakref.ref(self))
-        self.R = randrange(0,255)
-        self.G = randrange(0,255)
-        self.B = randrange(0,255)
+        self.R = randrange(0, 255)
+        self.G = randrange(0, 255)
+        self.B = randrange(0, 255)
 
     def moveRight(self):
         self.x = (self.x + rn.randint(-4, 4)) % self.windowWidth
@@ -46,7 +47,8 @@ class Killer:
     def __init__(self, name, direction, window_dim):
         self.name = name
         self.windowWidth, self.windowHeight = window_dim
-        self.x = rn.randint(self.windowWidth-(self.windowWidth*0.2), self.windowWidth)
+        self.x = rn.randint(self.windowWidth-(self.windowWidth*0.2),
+                            self.windowWidth)
         self.y = rn.randint(0, self.windowHeight)
         self.level = 1
         self.size = 3
@@ -106,7 +108,7 @@ class Killer:
 class Player:
     _instances = set()
 
-    def __init__(self, window_dim, network, use_network):
+    def __init__(self, window_dim, network, use_network, start_time):
         self.windowWidth, self.windowHeight = window_dim
         self.network = network
         self.level = 20
@@ -119,6 +121,8 @@ class Player:
         self.B = 0
         self.speed = 8
         self.use_network = use_network
+        self.start_time= start_time
+        self.time_data = []
 
     def moveRight(self):
         self.x = (self.x + self.speed) % self.windowWidth
@@ -136,17 +140,18 @@ class Player:
         if self.B == 255:
             return
         self.level += 1
-        print(self.level)
+        time_ = time.perf_counter() - self.start_time
+        self.time_data.append((self.level, time_))
         if self.level % 10 == 0:
             if self.size < 10:
                 self.size += 1
             elif self.fill < 10:
                 self.fill += 1
-            elif self.R > 5:
+            elif self.R > 10:
                 self.R -= 2
                 self.G -= 2
             else:
-                self. R = 0
+                self.R = 0
                 self.B = 255
 
     def level_down(self, num):
@@ -154,12 +159,13 @@ class Player:
             return
         if self.level - num >= 0:
             self.level -= num
-            print(self.level)
         else:
             self.level = 0
-        if self.R < 255:
+        time_ = time.perf_counter() - self.start_time
+        self.time_data.append((self.level, time_))
+        if self.R < 250:
             self.R += 2
-            self.B += 2
+            self.G += 2
         elif self.fill > 1:
             self.fill -= 1
         elif self.size > 3:
@@ -168,7 +174,8 @@ class Player:
             self.B = 0
 
     def move(self, state_array, num_particles):
-        move = self.network.update_weights_and_biases(state_array, num_particles)
+        move = self.network.update_weights_and_biases(state_array,
+                                                      num_particles)
         if move == 'll':
             self.moveLeft()
         elif move == 'lu':

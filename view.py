@@ -2,6 +2,7 @@ import pygame
 import random as rn
 import math
 import numpy as np
+import time
 
 from pygame.locals import *
 
@@ -49,6 +50,7 @@ class App():
             (self.windowWidth, self.windowHeight), pygame.HWSURFACE)
         pygame.display.set_caption('')
         self._running = True
+        self.start_time = time.perf_counter()
 
     def on_event(self, event):
         if event.type == QUIT:
