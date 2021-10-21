@@ -4,6 +4,12 @@ The neural network updates in real time and is supposed to get better at taking 
 
 ### Run game
 
+Setup a virtual environment and install the requirements
+```python
+$ pip install -r requirements.txt
+```
+Have a look in ```dashboard.py``` to set preferred parameters. You can choose to play yourself with the keyboard arrows by setting ```use_network``` to False.    
+Run the game
 ```python
 $ python dashboard.py
 ```
@@ -12,8 +18,7 @@ $ python dashboard.py
 * You can tune parameters in the script dashboard.py
 * If you want less hidden layers you can set a layer to 0.
 * If you want to add more layers you have to modify the script accordingly.
-
-If you want to play yourself, set "use_network = False"
+* If you want to play yourself, set "use_network = False"
 
 ### NETWORK COMMENTS
 
