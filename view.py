@@ -33,7 +33,7 @@ def fight(player, obj, windowWidth, windowHeight):
 
 class App():
     '''Class that runs the game'''
-    def __init__(self, player, particles, killers, window_dim, eta):
+    def __init__(self, player, particles, killers, window_dim, eta, time_sleep):
         self.windowWidth, self.windowHeight = window_dim
         self.player = player
         self.particles = particles
@@ -43,6 +43,7 @@ class App():
         self._image_surf = None
         self.n_cells = 1 + len(particles) + len (killers)
         self.eta = eta
+        self.time_sleep = time_sleep
 
     def on_init(self):
         pygame.init()
@@ -61,6 +62,9 @@ class App():
 
     def on_render(self):
         self._display_surf.fill((0, 0, 0))
+        if type(self.player.x) == np.ndarray:
+            self.player.x = self.player.x[0]
+            self.player.y = self.player.y[0]
         pygame.draw.circle(
             self._display_surf,
             (self.player.R, self.player.G, self.player.B),
@@ -145,6 +149,7 @@ class App():
             self._running = False
 
         while(self._running):
+            time.sleep(self.time_sleep)
             pygame.event.pump()
             keys = pygame.key.get_pressed()
             if (keys[K_RIGHT]):

@@ -6,11 +6,6 @@ from view import *
 from model import Player, Particle, Killer
 from network import Network
 
-'''
-Run the game with this script by running:
- $ python dashboard.py
-
-'''
 
 # -------- Set parameters -------- #
 number_of_killers = 6
@@ -22,9 +17,12 @@ eta = 0.4
 # Choose if you want the network to play (True) or yourself (False)
 use_network = True
 # Neural network properties
-first_layer = 20
-second_layer = 99
-third_layer = 40
+first_layer = 2
+second_layer = 9
+third_layer = 4
+
+# If the game is runnung too fast/slow on your machine you can lower/higher this value to tune the time.sleep() parameter.
+time_sleep = 0.01
 
 
 # -------- Automatic parameters -------- #
@@ -47,7 +45,7 @@ for i in range(0, number_of_killers):
                         window_dim)
     killer_list.append(new_killer)
 
-A = App(player, particle_list, killer_list, window_dim, eta)
+A = App(player, particle_list, killer_list, window_dim, eta, time_sleep)
 A.on_execute()
 
 with open('time_data.py', 'w') as file:
