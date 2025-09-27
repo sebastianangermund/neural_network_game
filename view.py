@@ -65,23 +65,33 @@ class App():
         if type(self.player.x) == np.ndarray:
             self.player.x = self.player.x[0]
             self.player.y = self.player.y[0]
+
         pygame.draw.circle(
             self._display_surf,
             (self.player.R, self.player.G, self.player.B),
-            (self.player.x, self.player.y),
+            (int(self.player.x), int(self.player.y)),  # <-- cast to int
             self.player.size,
             self.player.fill,
         )
+
         if self.player.use_network:
+
             state_array = np.zeros((self.n_cells-1, 1))
-            coord_array = np.zeros((2*self.n_cells, 1))
-            coord_array[0] = self.player.x
-            coord_array[1] = self.player.y
+            scores = np.full((self.n_cells-1, 1), -999.0, dtype=np.float32)  # fill with low numbers
+            coord_array = np.zeros((2*self.n_cells, 1), dtype=np.float32)
+            coord_array[0] = self.player.x / float(self.windowWidth)
+            coord_array[1] = self.player.y / float(self.windowHeight)
             count = 1
+
         for obj in self.particles:
             distance = coll(self.player, obj, self.windowWidth, self.windowHeight)
             pygame.draw.circle(
-                self._display_surf, (obj.R, obj.G, obj.B), (obj.x, obj.y), 4, 3)
+                self._display_surf,
+                (obj.R, obj.G, obj.B),
+                (int(obj.x), int(obj.y)),
+                4,
+                3
+            )
             if self.player.use_network:
                 coord_array[2*count] = obj.x
                 coord_array[2*count+1] = obj.y
@@ -97,7 +107,7 @@ class App():
             pygame.draw.circle(
                 self._display_surf,
                 (obj.R, obj.G, obj.B),
-                (obj.x, obj.y),
+                (int(obj.x), int(obj.y)),
                 obj.size,
                 obj.fill,
             )
@@ -119,8 +129,26 @@ class App():
             # *GIVE RANDOM ARRAY AS INPUT*
             # state_array = np.random.uniform(low=0, high=self.windowWidth, size=state_array.shape)
             # *COMMENT OUT TO GIVE COORDINATES*
-            activations = self.player.network.SGD((np.float32(coord_array), state_array), 1, 1, 0.3)
+
+            # when you process particles and killers set:
+            # - for a particle, score = 1 - distance/diag  (range 0..1)
+            # - for a killer, score = - (distance/diag)   (range ~-1..0)
+            # These live only in 'scores' and are used to pick a best action.
+
+            # after filling scores and coord_array, create a one-hot target:
+            best_index = int(np.argmax(scores))   # choose the highest score (prefer particles)
+            y_target = np.zeros_like(scores, dtype=np.float32)
+            y_target[best_index] = 1.0
+
+            # TRAIN: scale inputs if needed, pass (x, y) pair to SGD
+            # x (input) should be the full coord vector; make float32 and keep shape (n,1)
+            x_input = np.float32(coord_array)
+            activations = self.player.network.SGD((x_input, y_target), 1, 1, self.eta)
+
+            # choose action from network output
             choice_index = np.argmax(activations)
+            ## END NEW
+
             x_direction = (coord_array[2*(choice_index+1)] - self.player.x)
             y_direction = (coord_array[2*(choice_index+1)+1] - self.player.y)
             factor = max(abs(x_direction), abs(y_direction))

@@ -1,16 +1,3 @@
-# %load network.py
-
-"""
-network.py
-~~~~~~~~~~
-IT WORKS
-
-A module to implement the stochastic gradient descent learning
-algorithm for a feedforward neural network.  Gradients are calculated
-using backpropagation.  Note that I have focused on making the code
-simple, easily readable, and easily modifiable.  It is not optimized,
-and omits many desirable features.
-"""
 import random
 
 import numpy as np
@@ -74,7 +61,7 @@ class Network(object):
             '''
         return self.update_mini_batch(training_data, eta)
 
-    def update_mini_batch(self, mini_batch, eta):
+    def update_mini_batch_old(self, mini_batch, eta):
         """Update the network's weights and biases by applying
         gradient descent using backpropagation to a single mini batch.
         The ``mini_batch`` is a list of tuples ``(x, y)``, and ``eta``
@@ -92,6 +79,48 @@ class Network(object):
                        for b, nb in zip(self.biases, nabla_b)]
 
         return activations
+
+    def update_mini_batch(self, mini_batch, eta):
+        """Update the network's weights and biases by applying
+        gradient descent using backpropagation to a single mini batch.
+        The ``mini_batch`` may be either:
+          - a list of (x, y) tuples, or
+          - a single tuple (x, y) where x,y are arrays.
+        ``eta`` is the learning rate.
+        """
+        # initialize accumulators
+        nabla_b = [np.zeros(b.shape) for b in self.biases]
+        nabla_w = [np.zeros(w.shape) for w in self.weights]
+
+        # handle either a single (x,y) or a list of (x,y)
+        if isinstance(mini_batch, tuple) and len(mini_batch) == 2:
+            # single sample
+            x, y = mini_batch
+            batch_size = 1
+            delta_nabla_b, delta_nabla_w, activations = self.backprop(x, y)
+            nabla_b = [nb + dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
+            nabla_w = [nw + dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
+        else:
+            # assume iterable of (x,y)
+            samples = list(mini_batch)
+            batch_size = len(samples)
+            for x, y in samples:
+                dnb, dnw, _ = self.backprop(x, y)
+                nabla_b = [nb + dnb_i for nb, dnb_i in zip(nabla_b, dnb)]
+                nabla_w = [nw + dnw_i for nw, dnw_i in zip(nabla_w, dnw)]
+
+            # activations: return last computed sample's activations (if any)
+            activations = None
+            if batch_size > 0:
+                # compute forward for the last sample to return activations
+                activations = self.feedforward(samples[-1][0])
+
+        # apply gradient descent step using correct batch_size
+        self.weights = [w - (eta / batch_size) * nw for w, nw in zip(self.weights, nabla_w)]
+        self.biases = [b - (eta / batch_size) * nb for b, nb in zip(self.biases, nabla_b)]
+
+        return activations
+
 
     def backprop(self, x, y):
         """Return a tuple ``(nabla_b, nabla_w)`` representing the
@@ -137,7 +166,7 @@ class Network(object):
                         for (x, y) in test_data]
         return sum(int(x == y) for (x, y) in test_results)
 
-    def cost_derivative(self, output_activations, y):
+    def cost_derivative_old(self, output_activations, y):
         """Return the vector of partial derivatives partial C_x /
         partial a for the output activations."""
         if y[np.argmin(y)] == -1:
@@ -146,6 +175,11 @@ class Network(object):
             return np.ones(y.shape)*10
 
         return (output_activations-y)
+
+    def cost_derivative(self, output_activations, y):
+        """Return the vector of partial derivatives partial C_x / partial a"""
+        return (output_activations - y)
+
 
 
 # Miscellaneous functions

@@ -172,27 +172,3 @@ class Player:
             self.size -= 1
         else:
             self.B = 0
-
-    def move(self, state_array, num_particles):
-        move = self.network.update_weights_and_biases(state_array,
-                                                      num_particles)
-        if move == 'll':
-            self.moveLeft()
-        elif move == 'lu':
-            self.moveLeft()
-            self.moveUp()
-        elif move == 'ld':
-            self.moveLeft()
-            self.moveDown()
-        elif move == 'rr':
-            self.moveRight()
-        elif move == 'ru':
-            self.moveRight()
-            self.moveUp()
-        elif move == 'rd':
-            self.moveRight()
-            self.moveDown()
-        elif move == 'uu':
-            self.moveUp()
-        elif move == 'dd':
-            self.moveDown()
