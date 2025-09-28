@@ -62,112 +62,108 @@ class App():
 
     def on_render(self):
         self._display_surf.fill((0, 0, 0))
-        if type(self.player.x) == np.ndarray:
-            self.player.x = self.player.x[0]
-            self.player.y = self.player.y[0]
+        if isinstance(self.player.x, np.ndarray):
+            self.player.x = float(self.player.x[0])
+            self.player.y = float(self.player.y[0])
 
         pygame.draw.circle(
             self._display_surf,
             (self.player.R, self.player.G, self.player.B),
-            (int(self.player.x), int(self.player.y)),  # <-- cast to int
+            (int(self.player.x), int(self.player.y)),
             self.player.size,
             self.player.fill,
         )
 
-        if self.player.use_network:
+        diag = math.hypot(self.windowWidth, self.windowHeight)
 
-            state_array = np.zeros((self.n_cells-1, 1))
-            scores = np.full((self.n_cells-1, 1), -999.0, dtype=np.float32)  # fill with low numbers
+        if self.player.use_network:
+            # Input = relative positions of objects (normalized)
             coord_array = np.zeros((2*self.n_cells, 1), dtype=np.float32)
-            coord_array[0] = self.player.x / float(self.windowWidth)
-            coord_array[1] = self.player.y / float(self.windowHeight)
+            coord_array[0] = self.player.x / self.windowWidth
+            coord_array[1] = self.player.y / self.windowHeight
+
+            scores = []
+            rel_positions = []
             count = 1
 
-        for obj in self.particles:
-            distance = coll(self.player, obj, self.windowWidth, self.windowHeight)
-            pygame.draw.circle(
-                self._display_surf,
-                (obj.R, obj.G, obj.B),
-                (int(obj.x), int(obj.y)),
-                4,
-                3
-            )
-            if self.player.use_network:
-                coord_array[2*count] = obj.x
-                coord_array[2*count+1] = obj.y
-                if distance == 0:
-                    state_array[count-1] = -1
-                else:
-                    if not state_array[np.argmin(state_array)] == -1:
-                        state_array[count-1] = 1 - distance/(self.windowWidth**2+self.windowHeight**2)**(1/2)
+            # --- FOOD (reward = +1) ---
+            for obj in self.particles:
+                distance = coll(self.player, obj, self.windowWidth, self.windowHeight)
+                pygame.draw.circle(
+                    self._display_surf, (obj.R, obj.G, obj.B), (int(obj.x), int(obj.y)), 4, 3
+                )
+
+                dx = (obj.x - self.player.x) / diag
+                dy = (obj.y - self.player.y) / diag
+                rel_positions.append((dx, dy))
+
+                score = 1.0 if distance == 0 else 0.2  # simple positive reward
+                scores.append(score)
+
+                coord_array[2*count] = dx
+                coord_array[2*count+1] = dy
                 count += 1
 
-        for obj in self.killers:
-            distance = fight(self.player, obj, self.windowWidth, self.windowHeight)
-            pygame.draw.circle(
-                self._display_surf,
-                (obj.R, obj.G, obj.B),
-                (int(obj.x), int(obj.y)),
-                obj.size,
-                obj.fill,
-            )
-            if self.player.use_network:
-                coord_array[2*count] = obj.x
-                coord_array[2*count+1] = obj.y
-                if not state_array[np.argmin(state_array)] == -1:
-                    if distance == -100:
-                        state_array[count-1] = -100
-                    else:
-                        state_array[count-1] = -2*distance/(self.windowWidth**2+self.windowHeight**2)**(1/2)
+            # --- KILLERS (reward = -1) ---
+            for obj in self.killers:
+                distance = fight(self.player, obj, self.windowWidth, self.windowHeight)
+                pygame.draw.circle(
+                    self._display_surf,
+                    (obj.R, obj.G, obj.B),
+                    (int(obj.x), int(obj.y)),
+                    obj.size,
+                    obj.fill,
+                )
+
+                dx = (obj.x - self.player.x) / diag
+                dy = (obj.y - self.player.y) / diag
+                rel_positions.append((dx, dy))
+
+                score = -1.0 if distance == -100 else -0.2  # strong negative on collision
+                scores.append(score)
+
+                coord_array[2*count] = dx
+                coord_array[2*count+1] = dy
                 count += 1
 
-        if self.player.use_network:
-            # OBS
-            # If you give a random array as input, the player will only
-            # chase a single particle. If you give the coordinates however,
-            # it will sometimes switch to a different particle!
-            # *GIVE RANDOM ARRAY AS INPUT*
-            # state_array = np.random.uniform(low=0, high=self.windowWidth, size=state_array.shape)
-            # *COMMENT OUT TO GIVE COORDINATES*
+            total = sum(abs(s) for s in scores) + 1e-6
+            dx_target = sum(dx * s for (dx, dy), s in zip(rel_positions, scores)) / total
+            dy_target = sum(dy * s for (dx, dy), s in zip(rel_positions, scores)) / total
 
-            # when you process particles and killers set:
-            # - for a particle, score = 1 - distance/diag  (range 0..1)
-            # - for a killer, score = - (distance/diag)   (range ~-1..0)
-            # These live only in 'scores' and are used to pick a best action.
+            # Normalize to get a unit vector
+            norm = max(abs(dx_target), abs(dy_target), 1e-6)
+            y_target = np.array([[dx_target / norm], [dy_target / norm]], dtype=np.float32)
 
-            # after filling scores and coord_array, create a one-hot target:
-            best_index = int(np.argmax(scores))   # choose the highest score (prefer particles)
-            y_target = np.zeros_like(scores, dtype=np.float32)
-            y_target[best_index] = 1.0
+            # Train network
+            activations = self.player.network.SGD((coord_array, y_target), 1, 1, self.eta)
 
-            # TRAIN: scale inputs if needed, pass (x, y) pair to SGD
-            # x (input) should be the full coord vector; make float32 and keep shape (n,1)
-            x_input = np.float32(coord_array)
-            activations = self.player.network.SGD((x_input, y_target), 1, 1, self.eta)
+            # Predicted movement
+            dx_pred, dy_pred = activations.ravel()
 
-            # choose action from network output
-            choice_index = np.argmax(activations)
-            ## END NEW
+            # Add small exploration noise (5%)
+            if np.random.rand() < 0.05:
+                dx_pred += np.random.uniform(-0.3, 0.3)
+                dy_pred += np.random.uniform(-0.3, 0.3)
 
-            x_direction = (coord_array[2*(choice_index+1)] - self.player.x)
-            y_direction = (coord_array[2*(choice_index+1)+1] - self.player.y)
-            factor = max(abs(x_direction), abs(y_direction))
-            x_step = x_direction/factor
-            y_step = y_direction/factor
-            self.player.x = (self.player.x + 8*x_step) % self.windowWidth
-            self.player.y = (self.player.y + 8*y_step) % self.windowHeight
+            # Normalize prediction
+            # norm = max(abs(dx_pred), abs(dy_pred), 1e-6)
+            norm = math.hypot(dx_target, dy_target) + 1e-6
+            dx_pred /= norm
+            dy_pred /= norm
+
+            # Move player
+            self.player.x = (self.player.x + self.player.speed * dx_pred) % self.windowWidth
+            self.player.y = (self.player.y + self.player.speed * dy_pred) % self.windowHeight
 
         if self.player.level == 0:
             if self.player.use_network:
-                file = open('network_info_end', 'w')
-                file.write('BIASES: \n')
-                file.write('{} \n'.format(self.player.network.biases))
-                file.write('WEIGHTS: \n')
-                file.write('{} \n'.format(self.player.network.weights))
-                file.close()
+                with open("network_info_end", "w") as file:
+                    file.write("BIASES:\n{}\n".format(self.player.network.biases))
+                    file.write("WEIGHTS:\n{}\n".format(self.player.network.weights))
             self._running = False
 
         pygame.display.flip()
+
 
     def on_cleanup(self):
         pygame.quit()

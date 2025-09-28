@@ -21,10 +21,12 @@ class Particle:
         self.B = randrange(0, 255)
 
     def moveRight(self):
-        self.x = (self.x + rn.randint(-4, 4)) % self.windowWidth
+        # self.x = (self.x + rn.randint(-4, 4)) % self.windowWidth
+        self.x = self.x
 
     def moveUp(self):
-        self.y = (self.y + rn.randint(-4, 4)) % self.windowHeight
+        # self.y = (self.y + rn.randint(-4, 4)) % self.windowHeight
+        self.y = self.y
 
     def delete(self, object):
         del self
@@ -114,8 +116,10 @@ class Player:
         self.level = 20
         self.size = 3
         self.fill = 1
-        self.x = 10
-        self.y = int(math.floor(self.windowHeight * 0.5))
+        # self.x = 10
+        self.x = int(math.floor(self.windowWidth / 2))
+        # self.y = int(math.floor(self.windowHeight * 0.5))
+        self.y = int(math.floor(self.windowHeight / 2))
         self.R = 255
         self.G = 255
         self.B = 0

@@ -8,28 +8,28 @@ from network import Network
 
 
 # -------- Set parameters -------- #
-number_of_killers = 8
-number_of_particles = 6
-windowWidth = 1400
-windowHeight = 800
+number_of_killers = 1
+number_of_particles = 1
+windowWidth = 500
+windowHeight = windowWidth
 # training rate eta
-eta = 0.4
+eta = 0.1
 # Choose if you want the network to play (True) or yourself (False)
 use_network = True
 # Neural network properties
-first_layer = 4
-second_layer = 12
-third_layer = 9
+first_layer = 32
+second_layer = 32
+# third_layer = 9
 
 # If the game is runnung too fast/slow on your machine you can lower/higher this value to tune the time.sleep() parameter.
-time_sleep = 0.02
+time_sleep = 0.015
 
 
 # -------- Automatic parameters -------- #
 n_cells = 1 + number_of_particles + number_of_killers
-network = Network(
-    [2*n_cells, first_layer, second_layer, third_layer, n_cells-1]
-)
+
+network = Network([2*n_cells, first_layer, second_layer, 2])
+
 window_dim = windowWidth, windowHeight
 direction_list = [-1, 0, 1, 10]
 particle_list = []

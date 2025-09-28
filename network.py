@@ -18,17 +18,26 @@ class Network(object):
         self.num_layers = len(sizes)
         self.sizes = sizes
         self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
-        self.weights = [np.random.randn(y, x)
-                        for x, y in zip(sizes[:-1], sizes[1:])]
+        self.weights = [np.random.randn(y, x) for x, y in zip(sizes[:-1], sizes[1:])]
 
-    def feedforward(self, a):
+    def feedforward_sigmoid(self, a):
         """Return the output of the network if ``a`` is input."""
         for b, w in zip(self.biases, self.weights):
             a = sigmoid(np.dot(w, a)+b)
         return a
 
-    def SGD(self, training_data, epochs, mini_batch_size, eta,
-            test_data=None):
+    def feedforward(self, a):
+        """Return the output of the network if ``a`` is input."""
+        for i, (b, w) in enumerate(zip(self.biases, self.weights)):
+            z = np.dot(w, a) + b
+            if i == len(self.biases) - 1:
+                # last layer = tanh
+                a = np.tanh(z)
+            else:
+                a = sigmoid(z)
+        return a
+
+    def SGD(self, training_data, epochs, mini_batch_size, eta, test_data=None):
         """Train the neural network using mini-batch stochastic
         gradient descent.  The ``training_data`` is a list of tuples
         ``(x, y)`` representing the training inputs and the desired
@@ -179,7 +188,6 @@ class Network(object):
     def cost_derivative(self, output_activations, y):
         """Return the vector of partial derivatives partial C_x / partial a"""
         return (output_activations - y)
-
 
 
 # Miscellaneous functions
