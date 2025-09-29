@@ -4,7 +4,7 @@ import math
 import numpy as np
 import time
 
-from pygame.locals import *
+from pygame.locals import K_RIGHT, K_LEFT, K_UP, K_DOWN, K_ESCAPE
 
 
 def coll(player, obj, windowWidth, windowHeight):
@@ -25,7 +25,6 @@ def fight(player, obj, windowWidth, windowHeight):
     if dd < 9:
         # give player high risk high reward chance to level up
         player.level_down(obj.level)
-        # obj.level_up()
         return -100
     return dd
 
@@ -45,37 +44,19 @@ class App():
         self.time_sleep = time_sleep
         self.round_limit = round_limit
         self.round_count = 0
+        self.render = render
+        self._validate()
+
+    def _validate(self):
+        if self.render is False and self.player.use_network is False:
+            raise ValueError("If render is False, use_network must be True")
 
     def on_init(self):
         pygame.init()
-        self._display_surf = pygame.display.set_mode(
-            (self.windowWidth, self.windowHeight), pygame.HWSURFACE)
-        pygame.display.set_caption('')
-        self._running = True
-        self.start_time = time.perf_counter()
+        self._display_surf = pygame.display.set_mode((self.windowWidth, self.windowHeight), pygame.HWSURFACE)
+        pygame.display.set_caption('Super Simple Cell Simulator')
 
-    def on_event(self, event):
-        if event.type == QUIT:
-            self._running = False
-
-    def run_network(self, coord_array, y_target, dx_target, dy_target):
-        # Train network
-        activations = self.player.network.SGD((coord_array, y_target), 1, 1, self.eta)
-        # Predicted movement
-        dx_pred, dy_pred = activations.ravel()
-        # Add small exploration noise (5%)
-        if np.random.rand() < 0.05:
-            dx_pred += np.random.uniform(-0.3, 0.3)
-            dy_pred += np.random.uniform(-0.3, 0.3)
-        # Normalize prediction
-        norm = math.hypot(dx_target, dy_target) + 1e-6
-        dx_pred /= norm
-        dy_pred /= norm
-        # Move player
-        self.player.x = (self.player.x + self.player.speed * dx_pred) % self.windowWidth
-        self.player.y = (self.player.y + self.player.speed * dy_pred) % self.windowHeight
-
-    def render(self):
+    def _render_graphics(self):
         self._display_surf.fill((0, 0, 0))
         # Draw player
         pygame.draw.circle(
@@ -97,7 +78,24 @@ class App():
             )
         pygame.display.flip()
 
-    def update_npc_positions(self):
+    def _run_network(self, coord_array, y_target, dx_target, dy_target):
+        # Train network
+        activations = self.player.network.SGD((coord_array, y_target), 1, 1, self.eta)
+        # Predicted movement
+        dx_pred, dy_pred = activations.ravel()
+        # Add small exploration noise (5%)
+        if np.random.rand() < 0.05:
+            dx_pred += np.random.uniform(-0.3, 0.3)
+            dy_pred += np.random.uniform(-0.3, 0.3)
+        # Normalize prediction
+        norm = math.hypot(dx_target, dy_target) + 1e-6
+        dx_pred /= norm
+        dy_pred /= norm
+        # Move player
+        self.player.x = (self.player.x + self.player.speed * dx_pred) % self.windowWidth
+        self.player.y = (self.player.y + self.player.speed * dy_pred) % self.windowHeight
+
+    def _update_npc_positions(self):
         # Input = relative positions of objects (normalized)
         coord_array = np.zeros((2*self.n_cells, 1), dtype=np.float32)
         coord_array[0] = self.player.x / self.windowWidth
@@ -108,7 +106,6 @@ class App():
         count = 1
 
         diag = math.hypot(self.windowWidth, self.windowHeight)
-        # --- FOOD (reward = +1) ---
         for obj in self.particles:
             distance = coll(self.player, obj, self.windowWidth, self.windowHeight)
 
@@ -123,7 +120,9 @@ class App():
             coord_array[2*count+1] = dy
             count += 1
 
-        # --- KILLERS (reward = -1) ---
+            obj.moveRight()
+            obj.moveUp()
+
         for obj in self.killers:
             distance = fight(self.player, obj, self.windowWidth, self.windowHeight)
 
@@ -145,6 +144,9 @@ class App():
             # Normalize to get a unit vector
             norm = max(abs(dx_target), abs(dy_target), 1e-6)
             y_target = np.array([[dx_target / norm], [dy_target / norm]], dtype=np.float32)
+
+            obj.moveRight()
+            obj.moveUp()
         
         return coord_array, y_target, dx_target, dy_target
 
@@ -153,51 +155,46 @@ class App():
             self.player.x = float(self.player.x[0])
             self.player.y = float(self.player.y[0])
 
-        coord_array, y_target, dx_target, dy_target = self.update_npc_positions()
+        coord_array, y_target, dx_target, dy_target = self._update_npc_positions()
 
         if self.player.use_network:
-            self.run_network(coord_array, y_target, dx_target, dy_target)
+            self._run_network(coord_array, y_target, dx_target, dy_target)
 
         if self.player.level == 0:
             self._running = False
 
-        self.render()
-
-        self.round_count += 1
-        if self.round_count >= self.round_limit:
-            self._running = False
+        if self.render:
+            self._render_graphics()
 
     def on_cleanup(self):
         pygame.quit()
 
-    def on_execute(self):
-        if self.on_init() is False:
-            self._running = False
+    def run(self):
+        if self.render:
+            if self.on_init() is False:
+                self._running = False
 
         while(self._running):
-            time.sleep(self.time_sleep)
-            pygame.event.pump()
-            keys = pygame.key.get_pressed()
-            if (keys[K_RIGHT]):
-                self.player.moveRight()
-            if (keys[K_LEFT]):
-                self.player.moveLeft()
-            if (keys[K_UP]):
-                self.player.moveUp()
-            if (keys[K_DOWN]):
-                self.player.moveDown()
-            if (keys[K_ESCAPE]):
+            if self.render:
+                time.sleep(self.time_sleep)
+                pygame.event.pump()
+                keys = pygame.key.get_pressed()
+                if (keys[K_RIGHT]):
+                    self.player.moveRight()
+                if (keys[K_LEFT]):
+                    self.player.moveLeft()
+                if (keys[K_UP]):
+                    self.player.moveUp()
+                if (keys[K_DOWN]):
+                    self.player.moveDown()
+                if (keys[K_ESCAPE]):
+                    self._running = False
+
+            self.round_count += 1
+            if self.round_count >= self.round_limit:
                 self._running = False
-            for obj in self.particles:
-                    obj.moveRight()
-                    obj.moveUp()
-            for obj in self.killers:
-                    obj.moveRight()
-                    obj.moveUp()
+
             self.on_render()
-        self.on_cleanup()
 
-
-if __name__ == "__main__":
-    theApp = App()
-    theApp.on_execute()
+        if self.render:
+            self.on_cleanup()

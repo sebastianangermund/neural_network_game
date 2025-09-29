@@ -46,35 +46,35 @@ class Network(object):
         network will be evaluated against the test data after each
         epoch, and partial progress printed out.  This is useful for
         tracking progress, but slows things down substantially."""
-        '''
-        training_data = list(training_data)
-        n = len(training_data)
 
-        if test_data:
-            test_data = list(test_data)
-            n_test = len(test_data)
+        # training_data = list(training_data)
+        # n = len(training_data)
 
-        for j in range(epochs):
-            random.shuffle(training_data)
-            mini_batches = [
-                training_data[k:k+mini_batch_size]
-                for k in range(0, n, mini_batch_size)
-            ]
-            for training_data in mini_batches:
-                self.update_mini_batch(training_data, eta)
-            if test_data:
-                print("Epoch {} : {} / {}".format(j,self.evaluate(test_data),
-                      n_test));
-            else:
-                print("Epoch {} complete".format(j))
-            '''
+        # if test_data:
+        #     test_data = list(test_data)
+        #     n_test = len(test_data)
+
+        # for j in range(epochs):
+        #     random.shuffle(training_data)
+        #     mini_batches = [
+        #         training_data[k:k+mini_batch_size]
+        #         for k in range(0, n, mini_batch_size)
+        #     ]
+        #     for training_data in mini_batches:
+        #         self.update_mini_batch(training_data, eta)
+        #     if test_data:
+        #         print("Epoch {} : {} / {}".format(j,self.evaluate(test_data), n_test))
+        #     else:
+        #         print("Epoch {} complete".format(j))
+
         return self.update_mini_batch(training_data, eta)
 
     def update_mini_batch_old(self, mini_batch, eta):
-        """Update the network's weights and biases by applying
-        gradient descent using backpropagation to a single mini batch.
-        The ``mini_batch`` is a list of tuples ``(x, y)``, and ``eta``
-        is the learning rate."""
+        """ update the network's weights and biases by applying
+            gradient descent using backpropagation to a single mini batch.
+            The ``mini_batch`` is a list of tuples ``(x, y)``, and ``eta``
+            is the learning rate.
+        """
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
         # for x, y in mini_batch:
@@ -90,7 +90,7 @@ class Network(object):
         return activations
 
     def update_mini_batch(self, mini_batch, eta):
-        """Update the network's weights and biases by applying
+        """ update the network's weights and biases by applying
         gradient descent using backpropagation to a single mini batch.
         The ``mini_batch`` may be either:
           - a list of (x, y) tuples, or
@@ -129,7 +129,6 @@ class Network(object):
         self.biases = [b - (eta / batch_size) * nb for b, nb in zip(self.biases, nabla_b)]
 
         return activations
-
 
     def backprop(self, x, y):
         """Return a tuple ``(nabla_b, nabla_w)`` representing the

@@ -24,8 +24,6 @@ It is assumed that the input a is an (n, 1) Numpy ndarray, not a (n,) vector. He
 
 ## TODO
 * Fix right-down preference(?)
-* Run without rendering and print scores. Set round limit.
-* Try network2,3
 
 * Writing biases completely. Now thwy look like this:
 
