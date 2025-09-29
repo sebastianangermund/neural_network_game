@@ -21,11 +21,15 @@ class Particle:
         self.B = randrange(0, 255)
 
     def moveRight(self):
+        # Use brownian motion:
         # self.x = (self.x + rn.randint(-4, 4)) % self.windowWidth
+        # Static:
         self.x = self.x
 
     def moveUp(self):
+        # Use brownian motion:
         # self.y = (self.y + rn.randint(-4, 4)) % self.windowHeight
+        # Static:
         self.y = self.y
 
     def delete(self, object):
@@ -49,8 +53,7 @@ class Killer:
     def __init__(self, name, direction, window_dim):
         self.name = name
         self.windowWidth, self.windowHeight = window_dim
-        self.x = rn.randint(self.windowWidth-(self.windowWidth*0.2),
-                            self.windowWidth)
+        self.x = rn.randint(int(self.windowWidth-(self.windowWidth*0.2)), self.windowWidth)
         self.y = rn.randint(0, self.windowHeight)
         self.level = 1
         self.size = 3
@@ -67,7 +70,10 @@ class Killer:
         elif self.direction == 0:
             self.x = (self.x + rn.randrange(5, 9)) % self.windowWidth
         else:
-            self.x = (self.x + rn.randrange(-4, 4)) % self.windowWidth
+            ## Use brownian motion:
+            # self.x = (self.x + rn.randrange(-4, 4)) % self.windowWidth
+            ## Static:
+            self.x = (self.x + 0) % self.windowWidth
 
     def moveUp(self):
         if self.direction == 1:
@@ -75,7 +81,10 @@ class Killer:
         elif self.direction == 10:
             self.y = (self.y + rn.randint(5, 10)) % self.windowHeight
         else:
-            self.y = (self.y + rn.randrange(-4, 4)) % self.windowHeight
+            ## Use brownian motion:
+            # self.y = (self.y + rn.randrange(-4, 4)) % self.windowHeight
+            ## Static:
+            self.y = (self.y + 0) % self.windowHeight
 
     def delete(self, object):
         del self
@@ -92,7 +101,7 @@ class Killer:
             self.R -= 10
             self.G += 10
         else:
-            self. R = 0
+            self.R = 0
             self.G = 255
 
     @classmethod
@@ -110,7 +119,7 @@ class Killer:
 class Player:
     _instances = set()
 
-    def __init__(self, window_dim, network, use_network, start_time):
+    def __init__(self, window_dim, network, use_network):
         self.windowWidth, self.windowHeight = window_dim
         self.network = network
         self.level = 20
@@ -125,8 +134,7 @@ class Player:
         self.B = 0
         self.speed = 8
         self.use_network = use_network
-        self.start_time= start_time
-        self.time_data = []
+        self.level_data = []
 
     def moveRight(self):
         self.x = (self.x + self.speed) % self.windowWidth
@@ -144,8 +152,7 @@ class Player:
         if self.B == 255:
             return
         self.level += 1
-        time_ = time.perf_counter() - self.start_time
-        self.time_data.append((self.level, time_))
+        self.level_data.append(self.level)
         if self.level % 10 == 0:
             if self.size < 10:
                 self.size += 1
@@ -165,8 +172,7 @@ class Player:
             self.level -= num
         else:
             self.level = 0
-        time_ = time.perf_counter() - self.start_time
-        self.time_data.append((self.level, time_))
+        self.level_data.append(self.level)
         if self.R < 250:
             self.R += 2
             self.G += 2
