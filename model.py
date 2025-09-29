@@ -4,8 +4,6 @@ import math
 import time
 from random import randrange
 
-from network import Network
-
 
 class Particle:
     _instances = set()

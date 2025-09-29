@@ -21,12 +21,11 @@ def coll(player, obj, windowWidth, windowHeight):
 def fight(player, obj, windowWidth, windowHeight):
     limit = max(player.size, obj.size)
     x, y = player.x, player.y
-    dd = math.sqrt(((x - obj.x)**2) + ((y - obj.y)**2))
-    if dd < 9:
-        # give player high risk high reward chance to level up
+    dd = math.hypot(x - obj.x, y - obj.y)
+    collided = dd < 9
+    if collided:
         player.level_down(obj.level)
-        return -100
-    return dd
+    return collided, dd
 
 
 class App():
@@ -88,9 +87,10 @@ class App():
             dx_pred += np.random.uniform(-0.3, 0.3)
             dy_pred += np.random.uniform(-0.3, 0.3)
         # Normalize prediction
-        norm = math.hypot(dx_target, dy_target) + 1e-6
-        dx_pred /= norm
-        dy_pred /= norm
+        pred_norm = math.hypot(dx_pred, dy_pred) + 1e-6
+        dx_pred /= pred_norm
+        dy_pred /= pred_norm
+
         # Move player
         self.player.x = (self.player.x + self.player.speed * dx_pred) % self.windowWidth
         self.player.y = (self.player.y + self.player.speed * dy_pred) % self.windowHeight
@@ -124,29 +124,29 @@ class App():
             obj.moveUp()
 
         for obj in self.killers:
-            distance = fight(self.player, obj, self.windowWidth, self.windowHeight)
+            collided, distance = fight(self.player, obj, self.windowWidth, self.windowHeight)
 
             dx = (obj.x - self.player.x) / diag
             dy = (obj.y - self.player.y) / diag
             rel_positions.append((dx, dy))
 
-            score = -1.0 if distance == -100 else -0.2  # strong negative on collision
+            score = -1.0 if collided else -0.2  # strong negative on collision
             scores.append(score)
 
             coord_array[2*count] = dx
             coord_array[2*count+1] = dy
             count += 1
 
-            total = sum(abs(s) for s in scores) + 1e-6
-            dx_target = sum(dx * s for (dx, dy), s in zip(rel_positions, scores)) / total
-            dy_target = sum(dy * s for (dx, dy), s in zip(rel_positions, scores)) / total
-
-            # Normalize to get a unit vector
-            norm = max(abs(dx_target), abs(dy_target), 1e-6)
-            y_target = np.array([[dx_target / norm], [dy_target / norm]], dtype=np.float32)
-
             obj.moveRight()
             obj.moveUp()
+
+        total = sum(abs(s) for s in scores) + 1e-6
+        dx_target = sum(dx * s for (dx, dy), s in zip(rel_positions, scores)) / total
+        dy_target = sum(dy * s for (dx, dy), s in zip(rel_positions, scores)) / total
+
+        # Normalize to get a unit vector
+        norm = math.hypot(dx_target, dy_target) + 1e-6
+        y_target = np.array([[dx_target / norm], [dy_target / norm]], dtype=np.float32)
         
         return coord_array, y_target, dx_target, dy_target
 

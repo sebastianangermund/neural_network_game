@@ -31,7 +31,6 @@ class Network(object):
         for i, (b, w) in enumerate(zip(self.biases, self.weights)):
             z = np.dot(w, a) + b
             if i == len(self.biases) - 1:
-                # last layer = tanh
                 a = np.tanh(z)
             else:
                 a = sigmoid(z)
@@ -147,8 +146,7 @@ class Network(object):
             activation = sigmoid(z)
             activations.append(activation)
         # backward pass
-        delta = self.cost_derivative(activations[-1], y) * \
-            sigmoid_prime(zs[-1])
+        delta = self.cost_derivative(activations[-1], y) * (1 - np.tanh(zs[-1])**2)
         nabla_b[-1] = delta
         nabla_w[-1] = np.dot(delta, activations[-2].transpose())
         # Note that the variable l in the loop below is used a little

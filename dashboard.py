@@ -96,32 +96,44 @@ def run_simulation_round(player, conf):
 def run_simulation_batch(n_rounds, batch):
     if conf.render is True:
         raise ValueError("If render is True, only run a single simulation.")
+    survivors = []
     for i in range(n_rounds):
-        print(f'Starting simulation {i+1} of {n_rounds}')
         player = get_player(conf)
         run_simulation_round(player, conf)
         max_level = max(player.level_data) if player.level_data else 0
         final_level = player.level
         # Only save strong networks
-        if max_level >= 20 and final_level >= 1:
-            write_data(player, batch, i, max_level, final_level)
-        print(f'Finished simulation {i+1} of {n_rounds}\n')
-
-
-def run_neural_evolution(n_batches, n_rounds_per_batch):
-    pass
+        if max_level >= 25 and final_level >= 1:
+            survivors.append((player, max_level, final_level))
+    return survivors
 
 
 if __name__ == "__main__":
-    # For testing and debugging you can run a single simulation round with rendering
+
     conf = Config()
+
     if conf.render is True:
         player = get_player(conf)
         run_simulation_round(player, conf)
-    else:
-        n_batches = 2
-        n_rounds_per_batch = 10
-        for batch in range(n_batches):
-            print(f'Starting batch {batch+1} of {n_batches}')
-            run_simulation_batch(n_rounds_per_batch, batch)
-        # run_neural_evolution(n_batches, n_rounds_per_batch)
+        exit()
+
+    n_batches = 5
+    n_rounds_per_batch = 20
+    for batch in range(n_batches):
+        print(f'Starting batch {batch+1} of {n_batches}')
+        survivors = run_simulation_batch(n_rounds_per_batch, batch)
+        print(f'Finished batch {batch+1} of {n_batches}\nFound {len(survivors)} survivors')
+        # You can now use the survivors list for further processing
+
+    if not survivors:
+        print("No survivors found in any batch.")
+        exit()
+
+    ranked_networks = sorted(survivors, key=lambda x: (x[1] + x[2]), reverse=True)
+
+    # Test the best network
+    test_conf = Config()
+    test_conf.render = True
+    test_conf.round_limit = 5000
+    player = ranked_networks[0][0]
+    run_simulation_round(player, test_conf)
