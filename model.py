@@ -20,15 +20,15 @@ class Particle:
 
     def moveRight(self):
         # Use brownian motion:
-        # self.x = (self.x + rn.randint(-4, 4)) % self.windowWidth
+        self.x = (self.x + rn.randint(-4, 4)) % self.windowWidth
         # Static:
-        self.x = self.x
+        # self.x = self.x
 
     def moveUp(self):
         # Use brownian motion:
-        # self.y = (self.y + rn.randint(-4, 4)) % self.windowHeight
+        self.y = (self.y + rn.randint(-4, 4)) % self.windowHeight
         # Static:
-        self.y = self.y
+        # self.y = self.y
 
     def delete(self, object):
         del self

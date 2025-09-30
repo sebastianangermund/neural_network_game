@@ -1,3 +1,4 @@
+# view.py
 import pygame
 import random as rn
 import math
@@ -19,18 +20,18 @@ def coll(player, obj, windowWidth, windowHeight):
 
 
 def fight(player, obj, windowWidth, windowHeight):
-    limit = max(player.size, obj.size)
     x, y = player.x, player.y
     dd = math.hypot(x - obj.x, y - obj.y)
     collided = dd < 9
     if collided:
         player.level_down(obj.level)
-    return collided, dd
+        # return sentinel for collision (kept for compatibility with your scoring)
+    return collided
 
 
 class App():
     '''Class that runs the game'''
-    def __init__(self, player, particles, killers, window_dim, eta, time_sleep, round_limit=1000, render=True):
+    def __init__(self, player, particles, killers, window_dim, eta, time_sleep, round_limit=1000, render=True, old_network=False):
         self.windowWidth, self.windowHeight = window_dim
         self.player = player
         self.particles = particles
@@ -45,6 +46,7 @@ class App():
         self.round_count = 0
         self.render = render
         self._validate()
+        self.old_network = old_network
 
     def _validate(self):
         if self.render is False and self.player.use_network is False:
@@ -77,16 +79,25 @@ class App():
             )
         pygame.display.flip()
 
-    def _run_network(self, coord_array, y_target, dx_target, dy_target):
-        # Train network
-        activations = self.player.network.SGD((coord_array, y_target), 1, 1, self.eta)
-        # Predicted movement
-        dx_pred, dy_pred = activations.ravel()
+    # >>> UPDATED: pure PyTorch online step
+    def _run_network(self, coord_array, y_target):
+
+        if self.old_network:
+            # Train network
+            activations = self.player.network.SGD((coord_array, y_target), 1, 1, self.eta)
+            # Predicted movement
+            dx_pred, dy_pred = activations.ravel()
+        else:
+            # Train online and get prediction
+            pred = self.player.network.train_step(coord_array.ravel(), y_target.ravel())
+            dx_pred, dy_pred = float(pred[0]), float(pred[1])
+
         # Add small exploration noise (5%)
         if np.random.rand() < 0.05:
             dx_pred += np.random.uniform(-0.3, 0.3)
             dy_pred += np.random.uniform(-0.3, 0.3)
-        # Normalize prediction
+
+        # Normalize prediction by ITS OWN norm
         pred_norm = math.hypot(dx_pred, dy_pred) + 1e-6
         dx_pred /= pred_norm
         dy_pred /= pred_norm
@@ -113,7 +124,7 @@ class App():
             dy = (obj.y - self.player.y) / diag
             rel_positions.append((dx, dy))
 
-            score = 1.0 if distance == 0 else 0.2  # simple positive reward
+            score = 1.0 if distance == 0 else 0.2  # positive toward particles
             scores.append(score)
 
             coord_array[2*count] = dx
@@ -124,13 +135,13 @@ class App():
             obj.moveUp()
 
         for obj in self.killers:
-            collided, distance = fight(self.player, obj, self.windowWidth, self.windowHeight)
+            collided = fight(self.player, obj, self.windowWidth, self.windowHeight)
 
             dx = (obj.x - self.player.x) / diag
             dy = (obj.y - self.player.y) / diag
             rel_positions.append((dx, dy))
 
-            score = -1.0 if collided else -0.2  # strong negative on collision
+            score = -1.0 if collided else -0.2  # negative away from killers
             scores.append(score)
 
             coord_array[2*count] = dx
@@ -140,25 +151,26 @@ class App():
             obj.moveRight()
             obj.moveUp()
 
+        # >>> NEW: compute target ONCE after loops
         total = sum(abs(s) for s in scores) + 1e-6
-        dx_target = sum(dx * s for (dx, dy), s in zip(rel_positions, scores)) / total
-        dy_target = sum(dy * s for (dx, dy), s in zip(rel_positions, scores)) / total
+        dx_target = sum(dx * s for (dx, _dy), s in zip(rel_positions, scores)) / total
+        dy_target = sum(dy * s for (_dx, dy), s in zip(rel_positions, scores)) / total
 
-        # Normalize to get a unit vector
+        # L2 normalize for a unit direction
         norm = math.hypot(dx_target, dy_target) + 1e-6
         y_target = np.array([[dx_target / norm], [dy_target / norm]], dtype=np.float32)
-        
-        return coord_array, y_target, dx_target, dy_target
+
+        return coord_array, y_target
 
     def on_render(self):
         if isinstance(self.player.x, np.ndarray):
             self.player.x = float(self.player.x[0])
             self.player.y = float(self.player.y[0])
 
-        coord_array, y_target, dx_target, dy_target = self._update_npc_positions()
+        coord_array, y_target = self._update_npc_positions()
 
         if self.player.use_network:
-            self._run_network(coord_array, y_target, dx_target, dy_target)
+            self._run_network(coord_array, y_target)
 
         if self.player.level == 0:
             self._running = False
