@@ -10,19 +10,20 @@ from pygame.locals import K_RIGHT, K_LEFT, K_UP, K_DOWN, K_ESCAPE
 
 def coll(player, obj, windowWidth, windowHeight):
     x, y = player.x, player.y
-    dd = math.sqrt(((x - obj.x)**2) + ((y - obj.y)**2))
-    if dd < 10:
+    dd = math.hypot(x - obj.x, y - obj.y)
+    collided = dd < 25
+    if collided:
         obj.x = rn.randint(0, windowWidth)
         obj.y = rn.randint(0, windowHeight)
         player.level_up()
-        return 0
-    return dd
+        return collided
+    return collided
 
 
 def fight(player, obj, windowWidth, windowHeight):
     x, y = player.x, player.y
     dd = math.hypot(x - obj.x, y - obj.y)
-    collided = dd < 9
+    collided = dd < 12
     if collided:
         player.level_down(obj.level)
         # return sentinel for collision (kept for compatibility with your scoring)
@@ -117,14 +118,15 @@ class App():
         count = 1
 
         diag = math.hypot(self.windowWidth, self.windowHeight)
+
         for obj in self.particles:
-            distance = coll(self.player, obj, self.windowWidth, self.windowHeight)
+            collided = coll(self.player, obj, self.windowWidth, self.windowHeight)
 
             dx = (obj.x - self.player.x) / diag
             dy = (obj.y - self.player.y) / diag
             rel_positions.append((dx, dy))
 
-            score = 1.0 if distance == 0 else 0.2  # positive toward particles
+            score = 1.0 if collided else 0.1
             scores.append(score)
 
             coord_array[2*count] = dx

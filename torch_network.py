@@ -16,7 +16,7 @@ class TorchNetConfig:
     hidden1: int = 32
     hidden2: int = 32
     lr: float = 1e-3
-    device: Optional[str] = None   # "cuda" | "cpu" | None -> auto
+    device: Optional[str] = "cpu"
 
 
 class _MLP(nn.Module):
@@ -50,8 +50,7 @@ class TorchSteeringNet:
     Expects x_np shape (input_dim, 1), y_np shape (2, 1).
     """
     def __init__(self, cfg: TorchNetConfig):
-        dev = cfg.device or ("cuda" if torch.cuda.is_available() else "cpu")
-        self.device = torch.device(dev)
+        self.device = torch.device(cfg.device if cfg.device else ("mps" if torch.backends.mps.is_available() else "cpu"))
         self.model = _MLP(cfg.input_dim, cfg.hidden1, cfg.hidden2).to(self.device)
         self.opt = torch.optim.Adam(self.model.parameters(), lr=cfg.lr)
 
@@ -99,3 +98,29 @@ class TorchSteeringNet:
     def load(self, path: str) -> None:
         sd = torch.load(path, map_location=self.device)
         self.model.load_state_dict(sd)
+
+    def mutate(self, mutation_rate: float = 0.1) -> None:
+        """
+        In-place random mutation of weights.
+        Each weight has a chance of `mutation_rate` to be perturbed by Gaussian noise.
+        """
+        with torch.no_grad():
+            for param in self.model.parameters():
+                mask = torch.rand_like(param) < mutation_rate
+                noise = torch.randn_like(param) * 0.1
+                param.add_(mask.float() * noise)
+                param.clamp_(-1.0, 1.0)
+
+    def copy(self) -> TorchSteeringNet:
+        """
+        Create a deep copy of this network.
+        """
+        new_net = TorchSteeringNet(TorchNetConfig(
+            input_dim=self.model.fc1.in_features,
+            hidden1=self.model.fc1.out_features,
+            hidden2=self.model.fc2.out_features,
+            lr=self.opt.param_groups[0]['lr'],
+            device=str(self.device)
+        ))
+        new_net.model.load_state_dict(self.model.state_dict())
+        return new_net

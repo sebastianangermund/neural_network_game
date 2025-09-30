@@ -20,15 +20,15 @@ class Particle:
 
     def moveRight(self):
         # Use brownian motion:
-        self.x = (self.x + rn.randint(-4, 4)) % self.windowWidth
+        # self.x = (self.x + rn.randint(-4, 4)) % self.windowWidth
         # Static:
-        # self.x = self.x
+        self.x = self.x
 
     def moveUp(self):
         # Use brownian motion:
-        self.y = (self.y + rn.randint(-4, 4)) % self.windowHeight
+        # self.y = (self.y + rn.randint(-4, 4)) % self.windowHeight
         # Static:
-        # self.y = self.y
+        self.y = self.y
 
     def delete(self, object):
         del self
@@ -48,7 +48,7 @@ class Particle:
 class Killer:
     _instances = set()
 
-    def __init__(self, name, direction, window_dim):
+    def __init__(self, name, window_dim):
         self.name = name
         self.windowWidth, self.windowHeight = window_dim
         self.x = rn.randint(int(self.windowWidth-(self.windowWidth*0.2)), self.windowWidth)
@@ -59,30 +59,19 @@ class Killer:
         self.R = 255
         self.G = 0
         self.B = 0
-        self.direction = direction
         self._instances.add(weakref.ref(self))
 
     def moveRight(self):
-        if self.direction == -1:
-            self.x = (self.x + rn.randint(-9, -5)) % self.windowWidth
-        elif self.direction == 0:
-            self.x = (self.x + rn.randrange(5, 9)) % self.windowWidth
-        else:
-            ## Use brownian motion:
-            # self.x = (self.x + rn.randrange(-4, 4)) % self.windowWidth
-            ## Static:
-            self.x = (self.x + 0) % self.windowWidth
+        # Use brownian motion:
+        # self.x = (self.x + rn.randint(-4, 4)) % self.windowWidth
+        # Static:
+        self.x = self.x
 
     def moveUp(self):
-        if self.direction == 1:
-            self.y = (self.y + rn.randint(-9, -5)) % self.windowHeight
-        elif self.direction == 10:
-            self.y = (self.y + rn.randint(5, 10)) % self.windowHeight
-        else:
-            ## Use brownian motion:
-            # self.y = (self.y + rn.randrange(-4, 4)) % self.windowHeight
-            ## Static:
-            self.y = (self.y + 0) % self.windowHeight
+        # Use brownian motion:
+        # self.y = (self.y + rn.randint(-4, 4)) % self.windowHeight
+        # Static:
+        self.y = self.y
 
     def delete(self, object):
         del self
@@ -123,9 +112,7 @@ class Player:
         self.level = 20
         self.size = 3
         self.fill = 1
-        # self.x = 10
         self.x = int(math.floor(self.windowWidth / 2))
-        # self.y = int(math.floor(self.windowHeight * 0.5))
         self.y = int(math.floor(self.windowHeight / 2))
         self.R = 255
         self.G = 255
